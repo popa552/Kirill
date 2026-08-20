@@ -10,32 +10,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Extract project
         run: |
           mkdir -p project
           unzip -q KirillAPK-project.zip -d project
 
-      - name: Find Gradle project
-        run: |
-          GRADLEW=$(find project -name gradlew -type f | head -n 1)
-          if [ -z "$GRADLEW" ]; then
-            echo "gradlew not found"
-            find project -maxdepth 3 -type f | head -50
-            exit 1
-          fi
-          PROJECT_DIR=$(dirname "$GRADLEW")
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
 
       - name: Build APK
-        run: |
-          chmod +x "$PROJECT_DIR/gradlew"
-          cd "$PROJECT_DIR"
-          ./gradlew assembleDebug
+        working-directory: project
+        run: gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Kirill-APK
-          path: "**/build/outputs/apk/**/*.apk"
+          name: APK
+          path: project/**/build/outputs/apk/**/*.apk
